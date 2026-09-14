@@ -6,3 +6,12 @@ data/raw/
 data/processed/
 .ipynb_checkpoints/
 data/filings.db
+# One-off debugging/spot-check scripts, not part of the pipeline
+scripts/check_accession_manifest.py
+scripts/check_columns.py
+scripts/confirm_cfo_departure.py
+scripts/debug_merge.py
+scripts/spot_check_more_tickers.py
+scripts/spot_check_stz.py
+scripts/spot_check_stz_text.py
+scripts/test_search_query.py
