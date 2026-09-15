@@ -113,10 +113,46 @@ comparatively little:
    for a deployment scenario but means this single chronological split may not fully
    characterize model stability across market regimes.
 
+## FinBERT Fusion Model (Update)
+
+Replaced the shallow keyword-flag text features with FinBERT (`ProsusAI/finbert`)
+embeddings of the filing text (mean-pooled over tokens, 768-dim), reduced via PCA
+and fused with the same 8 price/market features from the baseline.
+
+- **Model selection**: grid search over {Logistic Regression, Random Forest} ×
+  {5, 10, 20, 50 PCA components} × {class_weight balanced/none}, selected on
+  **validation** macro F1 only, same discipline as the baseline. PCA was fit on
+  train only, to avoid leaking val/test information into the dimensionality
+  reduction itself.
+- **Selected config**: Logistic Regression, 8 price features + 20 PCA components
+  (92.8% explained variance retained), class_weight=balanced. Val macro F1 = 0.364.
+- **Final test result (touched once)**: macro F1 = **0.375**, vs. 0.334 for the
+  price-only baseline (+0.041) and 0.226 for the majority-class baseline.
+
+| Class    | Precision | Recall | F1   | (baseline F1) |
+|----------|-----------|--------|------|----------------|
+| Negative | 0.57      | 0.74   | 0.64 | 0.53           |
+| Neutral  | 0.12      | 0.08   | 0.10 | 0.14           |
+| Positive | 0.47      | 0.32   | 0.38 | 0.33           |
+
+**Honest interpretation**: the aggregate improvement is real, but it is not evenly
+distributed. FinBERT embeddings sharpened the Negative/Positive distinction
+(Negative recall +0.23) but made the Neutral-class problem slightly *worse*
+(F1 0.14 → 0.10; only 1 of 12 true Neutral test events was correctly identified,
+with 10 misclassified as Negative). This suggests the added text signal increases
+the model's confidence toward directional outcomes without helping it recognize
+"no meaningful reaction" — the dataset's smallest and already weakest class.
+Limitation #1 from the baseline (Neutral-class weakness) is therefore **not
+resolved** by this model and remains the primary target for future work, rather
+than something transformer embeddings alone fixed.
+
 ## Next Steps
-- NLP/transformer-based text embeddings (HuggingFace) to replace shallow keyword
-  features, with the explicit goal of beating the 0.334 test macro F1 baseline.
+- Address the Neutral-class weakness directly — e.g. class-specific threshold
+  tuning, oversampling (SMOTE or similar) restricted to train only, or reframing
+  as two binary problems (directional vs. non-event) before combining.
 - Investigate confound-checking at scale (limitation 3) before treating labels as
   ground truth for any published results.
 - Consider repeated/rolling-window validation to better characterize variance
   (limitation 2), if time permits within the project timeline.
+- MLOps/cloud deployment phase (per original roadmap Phase 4) once modeling work
+  is considered sufficiently mature.
